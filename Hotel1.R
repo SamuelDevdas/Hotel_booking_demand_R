@@ -1,7 +1,4 @@
-# git_test_changed
-print("samuel was here")
-
-
+################################
 ####### DATA LOADING#######
 # Load data_hotelset .csv as data_hotel
 data_hotel <- read.csv("hotel_bookings.csv")
@@ -32,30 +29,26 @@ hotel_subset <- data_hotel[sample(dataset_size, subset_size), ]
 # Now size == 11939
 nrow(hotel_subset)
 
-
-
-
-
-
-
-
-# 0-50 days lead time has the highest frequency = 50000
-hist(hotel_subset$lead_time)
-
-#density function is right skewed i.e lead time is not normally distributed
-plot(density(hotel_subset$lead_time))
+# 
+# # 0-50 days lead time has the highest frequency = 50000
+# hist(hotel_subset$lead_time)
+# 
+# #density function is right skewed i.e lead time is not normally distributed
+# plot(density(hotel_subset$lead_time))
 
 #hotel_subset LACKS GEOLOCATION DATA, SO WE FOUND A DATASET WITH THE GEO DATA
 country_loc <- read.csv("countries_codes_and_coordinates.csv")
 View(country_loc)
 
 
-
+#################################################
 #############DATA CLEANING###################
+#############################################
 
 #COMBINE YEAR, MONTH,DAY COLUMNS AS A SINGLE DATE
 
-hotel_subset$arrival_date<-as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
+hotel_subset$arrival_date<-as.Date(with(hotel_subset,
+                                        paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
 
 View(hotel_subset)
 
@@ -97,10 +90,9 @@ View(merged_loc)
 table(is.na(merged_loc$Country))
 sum(is.na(merged_loc))
 
+
 ######################################################################################
-
-
-##################PLOTTING########################################################
+##################PLOTTING PREP ########################################################
 
 #This code creates a data frame df with two columns: "index" containing indices 
 #of columns in the data frame merged_loc and "colnames" containing names of 
@@ -113,27 +105,43 @@ df
 numeric_columns <- names(merged_loc)[sapply(merged_loc, is.numeric)]
 print(numeric_columns)
 
-# To get rid of non-numeric variables for using corelation heat map function
+
+###########################################################
+###############PLOTTING
+####################################################################
+# Filter out non-numeric variables
 cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
-cor_hotel
-
-#Now all the variables are numeric
-str(cor_hotel)
-
 
 # Calculate the correlation matrix
-#corr_hotel <- cor(cor_hotel)
-corr_hotel <- data.matrix(cor_hotel, rownames.force = NA)
+corr_hotel <- cor(cor_hotel)
+#View((corr_hotel))
 
+# Create a heatmap with column names on both axes
+library(ggplot2)
+library(reshape2)
 
+# Melt the correlation matrix into long format
+corr_melted <- melt(corr_hotel)
+#View((corr_melted))
+#The resulting heatmap provides insights into the relationship between different variables in the dataset. The color gradient helps visualize the strength and direction of the correlation, with red indicating a positive correlation and blue indicating a negative correlation. The diagonal line shows the correlation of each variable with itself, which is always 1.
+# Set column names for melted data frame
+colnames(corr_melted) <- c("Var1", "Var2", "Corr")
 
-# Create the heat map
-#corrplot(cor_hotel, method = "color", type = "lower")
-heatmap(corr_hotel, scale = "row")
+# Plot the heatmap with ggplot2
+ggplot(data = corr_melted, aes(x = Var1, y = Var2, fill = Corr)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       midpoint = 0, limit = c(-1,1)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "", y = "", fill = "Correlation")
+
+#################################################################
+
 
 
 ######################
-######### barchart - CoUNT OF (Cancelled, Not-Cancelled)###############
+######### BARCHART - count of (Cancelled, Not-Cancelled)###############
 library(ggplot2)
 merged_loc$cancelled <- ifelse(merged_loc$is_canceled == 1, "cancelled", "not cancelled")
 ggplot(merged_loc, 
@@ -197,54 +205,48 @@ barplot(mean_adr_by_hotel_type$adr, names.arg = mean_adr_by_hotel_type$hotel,
         main = "Comparison of Average Daily Rate (ADR) between City and Resort Hotels")
 
 
-##########################################################
-########
-
-
-
 ########################################################
-# PLOT LEAD TIME hotel_subset BY COUNTRY ON WORLD MAP
-library(ggplot2)
-library(ggmap)
+#########PLOT LEAD TIME hotel_subset BY COUNTRY ON WORLD MAP
+#########################################################
+  # Load required libraries
+  install.packages("ggiraph")
+  library(ggplot2)
+  library(ggmap)
+  library(ggiraph)
+  
+  # create data for world coordinates using map_data() function
+  world_coordinates <- map_data("world")
+  
+  # create world map using ggplot() function
+  p <- ggplot() +
+    
+    # geom_map() function takes world coordinates as input to plot world map
+    geom_map(
+      data = world_coordinates, map = world_coordinates,
+      aes(long, lat, map_id = region), 
+      color = "white", fill = "lightblue", size = 0.2
+    ) +
+    # geom_point() adds points for each hotel subset by country with lead time
+    geom_point_interactive(
+      data = merged_loc,
+      aes(y = Latitude..average.,x = Longitude..average., color = "red",
+          size=lead_time, tooltip=paste("Country: ", Country,
+                                        "<br>Lead Time: ", lead_time,
+                                        " days", sep="")),
+      alpha = .5
+    ) + 
+    # remove the legend
+    theme(legend.position="none")
+  
+  # Create an interactive plot with ggiraph() function
+  ggiraph(code = print(p))
+  
 
-# BACKGROUND MAP AND PLOTS
-
-# create data for world coordinates using 
-# map_data() function
-world_coordinates <- map_data("world")
-
-# create world map using ggplot() function
-ggplot() +
-  
-  # geom_map() function takes world coordinates 
-  # as input to plot world map
-  geom_map(
-    data = world_coordinates, map = world_coordinates,
-    aes(long, lat, map_id = region), 
-    color = "white", fill = "lightblue", size = 0.2
-  ) +
-  geom_point(
-    data = merged_loc,
-    aes(y = Latitude..average.,x = Longitude..average., color = "red",
-        size=lead_time),
-    alpha = .5
-  ) 
-  
-  # legend.position as none removes the legend
-  theme(legend.position="none")
-  
-
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
+##############################################################  
+##########MODELLING#########################################   
 ##################################################################  
   ##### RELATIONSHIP BETWEEN STAY LENGTH AND ARRIVAL DATE OR WEEK
   
@@ -254,12 +256,6 @@ cor(x = merged_loc$arrival_date_week_number,
 cor(x = merged_loc$lead_time, y = merged_loc$stays_in_week_nights)
 
 cor(x = merged_loc$adr, y = merged_loc$stays_in_week_nights)
-
-
-
-
-
-
 
 
 
