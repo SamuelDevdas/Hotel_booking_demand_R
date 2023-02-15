@@ -1,0 +1,137 @@
+---
+title: "Analysis of Hotel Booking Demand"
+author: "Samuel Devdas & RituRaj Singh"
+date: ""
+output: html_document
+---
+
+
+## Introduction
+
+Hotel industry is a significant contributor to the economy of many countries. In this report, we will explore the booking demand in the hotel industry. We will analyze the data and identify patterns that can be useful in making informed decisions.
+
+---
+
+### Data Loading
+To begin our analysis, we first load the dataset into R. The dataset we will be using is the "hotel_bookings.csv".
+
+    # Load data_hotelset .csv as data_hotel
+    data_hotel <- read.csv("hotel_bookings.csv")
+
+We can take a quick look at the data by calling the head() function.
+
+    head(data_hotel)
+    
+We can also view the dataset in a spreadsheet format by calling the View() function.
+
+    View(data_hotel)
+    
+To get a better understanding of the structure of the dataset, we can use the str() function. This function provides information about the structure of the dataset, such as the number of observations, the number of variables, and the type of data in each variable.
+
+    str(data_hotel)
+
+Another useful function for getting a quick overview of the data is the summary() function. This function provides summary statistics for each variable in the dataset.
+
+    summary(data_hotel)
+    
+We can also check for missing values in the dataset. If the missing values are few and negligible, we can safely ignore them.
+
+    sum(is.na(data_hotel))
+    
+In our case, we have only 4 missing values, which we can safely ignore as insignificant.
+
+---
+
+### Data Subset
+
+The original dataset has 119,390 rows. As the dataset size is too large, we will select a random subset of 10% of the size of the original dataset to perform our analysis. To ensure reproducibility, we set a random seed.
+
+    # Calculate the size of the dataset
+    dataset_size <- nrow(data_hotel)
+    
+    # Set the random seed to ensure reproducibility
+    set.seed(123) 
+    
+    # Select a random subset of 10% of the size of the original dataset
+    subset_size <- round(0.1 * dataset_size)
+    hotel_subset <- data_hotel[sample(dataset_size, subset_size), ]
+    
+Now our dataset has 11,939 rows.
+
+---
+
+### Obtaining Geographic Location Data for Hotel Subsets
+
+As we continue with the analysis of hotel booking demand, we realized that the hotel_subset dataset we had created earlier lacks geolocation data. To address this, we obtained a new dataset called country_loc that contains the geographic coordinates of various countries.
+We loaded the country_loc dataset using the read.csv() function and viewed the data using the View() function.
+
+    country_loc <- read.csv("countries_codes_and_coordinates.csv")
+    View(country_loc)
+
+---
+
+### Data Cleaning
+
+We start by combining the year, month, and day columns into a single date column to simplify the data format. We can do this using the as.Date function along with paste.
+
+    hotel_subset$arrival_date<-as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
+
+We then discovered that the country column in the hotel_subset dataset and the Alpha.3.code column in the country_loc dataset have different lengths. To investigate further, we used the length function to check the number of unique values in each column, and found that they differ.
+
+    length(unique(hotel_subset$country))
+    length(unique(country_loc$Alpha.3.code))
+
+Upon checking if the column names match, we found that there are no matching values between the two columns.
+
+    intersect(x = hotel_subset$country,y = country_loc$Alpha.3.code)
+
+To further investigate the differences, we examined the values in the Alpha.3.code column and discovered that they have leading spaces. To get rid of these spaces, we use the str_remove function from the stringr library.
+
+    library(stringr)
+    country_loc$Alpha.3.code <- str_remove(string= country_loc$Alpha.3.code,pattern = "^ +")  
+
+After removing the leading spaces, we checked if the values in the two columns intersect, and found that they do. Thus, we merged the two datasets using the merge function, joining them on the country column from hotel_subset and the Alpha.3.code column from country_loc.
+
+    merged_loc <- merge(hotel_subset, country_loc, 
+                    by.x = "country", by.y = "Alpha.3.code")
+
+Finally, we verified that the resulting dataset, merged_loc, has geolocation per country without any extra missing values generated.
+
+    table(is.na(merged_loc$Country))
+    sum(is.na(merged_loc))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
