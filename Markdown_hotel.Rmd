@@ -5,6 +5,7 @@ date: ""
 output: html_document
 ---
 
+---
 
 ## Introduction
 
@@ -74,7 +75,7 @@ We loaded the country_loc dataset using the read.csv() function and viewed the d
 
 We start by combining the year, month, and day columns into a single date column to simplify the data format. We can do this using the as.Date function along with paste.
 
-    hotel_subset$arrival_date<-as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
+    hotel_subset$arrival_date <- as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
 
 We then discovered that the country column in the hotel_subset dataset and the Alpha.3.code column in the country_loc dataset have different lengths. To investigate further, we used the length function to check the number of unique values in each column, and found that they differ.
 
@@ -100,21 +101,190 @@ Finally, we verified that the resulting dataset, merged_loc, has geolocation per
     table(is.na(merged_loc$Country))
     sum(is.na(merged_loc))
 
+---
+
+## Data Preparation and Exploration
+
+After merging the two datasets, we need to prepare and explore the data further. We create a data frame df that contains two columns: "index" containing indices of columns in the data frame merged_loc and "colnames" containing names of columns in merged_loc. This will help us in indexing the columns later.
+
+    df <- data.frame(index = 1:length(colnames(merged_loc)),
+                 colnames = colnames(merged_loc))
+    df
+    
+We identify the columns that contain numerical values and store them in the numeric_columns variable. This will be used later to filter out non-numeric variables for using correlation heat map function.
+
+    numeric_columns <- names(merged_loc)[sapply(merged_loc, is.numeric)]
+    print(numeric_columns)
+    
+We create a new data frame cor_hotel by filtering out the non-numeric columns from the merged_loc data frame using the numeric_columns variable. This data frame cor_hotel now contains only the numerical variables.    
+  
+    cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
+    cor_hotel
+
+We confirm that all the variables are now numeric by using the str function.
+
+    str(cor_hotel)
+
+---
+
+## Data visualization
+
+We start by filtering out non-numeric variables from the dataset to calculate the correlation matrix. The resulting dataframe is called cor_hotel.
+
+    # Filter out non-numeric variables
+    cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
+
+### Correlation heatmap
+
+Next, we calculate the correlation matrix using the cor function. We then use the ggplot2 and reshape2 libraries to create a heatmap with column names on both axes.
+
+We first melt the correlation matrix into a long format using the melt function, and then set the column names for the melted dataframe. Finally, we plot the heatmap using the ggplot2 package, using geom_tile to fill each cell, scale_fill_gradient2 to set the color gradient, and theme and labs to add appropriate labeling.
+
+    # Calculate the correlation matrix
+    corr_hotel <- cor(cor_hotel)
+    
+    # Create a heatmap with column names on both axes
+    library(ggplot2)
+    library(reshape2)
+    
+    # Melt the correlation matrix into long format
+    corr_melted <- melt(corr_hotel)
+    
+    # Set column names for melted data frame
+    colnames(corr_melted) <- c("Var1", "Var2", "Corr")
+    
+    # Plot the heatmap with ggplot2
+    ggplot(data = corr_melted, aes(x = Var1, y = Var2, fill = Corr)) +
+      geom_tile() +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1,1)) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+      labs(x = "", y = "", fill = "Correlation")
 
 
+The resulting heatmap provides insights into the relationship between different variables in the dataset. The color gradient helps visualize the strength and direction of the correlation, with red indicating a positive correlation and blue indicating a negative correlation. The diagonal line shows the correlation of each variable with itself, which is always 1.
 
+---
 
+### Seasonality of hotel bookings
 
+In this section, we will investigate the seasonality of hotel bookings. We will use a line chart to visualize the trend in the number of bookings over time.
 
+First, we load the required packages: dplyr and lubridate. We will use the dplyr package to aggregate data and lubridate to extract year and month from the arrival date.
 
+    library(dplyr)
+    library(lubridate)
 
+Then, we aggregate the data by counting the number of bookings each month for both years (2015 and 2016). We store the aggregated data in a new data frame called "hotel_data_agg".
 
+    hotel_data_agg <- merged_loc %>% 
+      group_by(year = year(merged_loc$arrival_date), month = month(merged_loc$arrival_date)) %>% 
+      summarize(bookings = n())
 
+Finally, we create a line chart using ggplot2. We use the x-axis to represent the months (from 1 to 12) and the y-axis to represent the number of bookings. We add both a line and point to the chart. We also add labels to the x-axis, y-axis, and title to make the chart more informative.
 
+    ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
+      geom_line() +
+      geom_point(color = "red") +
+      xlab("Months \nYear- 2015 to 2016") +
+      ylab("Number of Bookings") +
+      ggtitle("Number of Bookings over Time")
+      
+---
 
+### Histogram - Frequency distribution of lead time data
 
+The lead_time column is extracted from the dataset and is used to create a histogram that shows the frequency distribution of lead times. The hist() function is used to create the histogram.
 
+    # Extract lead time column
+    lead_time <- merged_loc$lead_time
+    
+    # Create histogram of lead times
+    hist(lead_time, 
+         main = "Histogram of Lead Times", 
+         xlab = "Lead Time (days)", 
+         col = "blue")
 
+---
+
+### Barchart of Booking Cancellation
+
+In order to examine the distribution of booking cancellations in the dataset, a barchart is generated using ggplot2 package. The count of cancelled and not-cancelled bookings is represented in the barchart.
+
+    library(ggplot2)
+
+    # add a new column to identify cancelled or not
+    merged_loc$cancelled <- ifelse(merged_loc$is_canceled == 1, "cancelled", "not cancelled")
+
+    # plot barchart with count of cancelled and not-cancelled bookings
+    ggplot(merged_loc, aes(x=cancelled)) + 
+      geom_bar() +
+      labs(title = "Count of Cancelled and Not-cancelled Bookings",
+          x = "Cancellation Status",
+          y = "Count")
+
+---
+
+### Compare Average Daily Rate (ADR) between city and resort hotels - bar plot.
+
+Firstly, the mean ADR for each hotel type is calculated using the aggregate() function. The resulting data is stored in the mean_adr_by_hotel_type object.
+
+A bar plot is then created using barplot(), where the ADR values are plotted on the y-axis, and the hotel types are displayed on the x-axis. The x-axis labels are specified using the names.arg argument, and the x-axis and y-axis labels are set using the xlab and ylab arguments. Finally, the main title of the plot is set using the main argument.
+
+    
+    # Calculate the mean adr for each hotel type
+    mean_adr_by_hotel_type <- aggregate(adr ~ hotel, data = merged_loc, mean)
+    
+    # Plot a bar plot to compare adr between city and resort hotels
+    barplot(mean_adr_by_hotel_type$adr, names.arg = mean_adr_by_hotel_type$hotel, 
+            xlab = "Hotel Type", ylab = "Average Daily Rate (ADR)", 
+            main = "Comparison of Average Daily Rate (ADR) between City and Resort Hotels")
+
+---
+
+### Interactive World Map showing distribution of hotel bookings and lead times across countries
+
+This code uses the ggplot2 and ggmap libraries to create an interactive world map with plotted hotel data points, which can be used to visually explore the geographical distribution of hotel bookings and lead times across countries.
+
+First, the code loads the required libraries.
+
+    library(ggplot2)
+    library(ggmap)
+    library(ggiraph)
+
+Next, the map_data() function is used to create data for world coordinates.
+
+    world_coordinates <- map_data("world")
+
+The ggplot() function is then used to create the world map with geom_map(). This function takes the world coordinates as input to plot the map. The color, fill, and size parameters are used to specify the color and size of the points.
+
+    p <- ggplot() +
+        
+      # geom_map() function takes world coordinates as input to plot world map
+      geom_map(
+        data = world_coordinates, map = world_coordinates,
+        aes(long, lat, map_id = region), 
+        color = "white", fill = "lightblue", size = 0.2
+      ) +
+      # geom_point() adds points for each hotel subset by country with lead time
+      geom_point_interactive(
+        data = merged_loc,
+        aes(y = Latitude..average.,x = Longitude..average., color = "red",
+            size=lead_time, tooltip=paste("Country: ", Country,
+                                          "<br>Lead Time: ", lead_time,
+                                          " days", sep="")),
+        alpha = .5
+      ) + 
+      # remove the legend
+      theme(legend.position="none")
+
+Finally, the ggiraph() function is used to create an interactive plot by passing the print() output of the ggplot() object as a code argument.
+
+    ggiraph(code = print(p))
+
+The resulting plot can be used to explore the distribution of hotel bookings and lead times across different countries. The plotted points are color-coded based on the lead time, and hovering over a point displays information about the country and lead time in a tooltip. The interactivity of the plot can enhance the analysis by providing a more intuitive understanding of the data.
+
+---
 
 
 
