@@ -1,4 +1,6 @@
-################################
+
+
+
 ####### DATA LOADING#######
 # Load data_hotelset .csv as data_hotel
 data_hotel <- read.csv("hotel_bookings.csv")
@@ -205,11 +207,13 @@ barplot(mean_adr_by_hotel_type$adr, names.arg = mean_adr_by_hotel_type$hotel,
         main = "Comparison of Average Daily Rate (ADR) between City and Resort Hotels")
 
 
+
+
 ########################################################
 #########PLOT LEAD TIME hotel_subset BY COUNTRY ON WORLD MAP
 #########################################################
   # Load required libraries
-  install.packages("ggiraph")
+  #install.packages("ggiraph")
   library(ggplot2)
   library(ggmap)
   library(ggiraph)
@@ -258,6 +262,91 @@ cor(x = merged_loc$lead_time, y = merged_loc$stays_in_week_nights)
 cor(x = merged_loc$adr, y = merged_loc$stays_in_week_nights)
 
 
+#####################################
+########T Test adr- city and resort#########
+
+# Subset ADR data for City and Resort hotels
+city_adr <- subset(merged_loc, hotel == "City Hotel")$adr
+resort_adr <- subset(merged_loc, hotel == "Resort Hotel")$adr
+
+# Perform two-sample t-test
+t_test_result <- t.test(city_adr, resort_adr)
+
+# Print results
+t_test_result
+
+
+######################################################
+####LINEAR REGRESSION - ADR AND CHILDREN +
+#####################################################
+# Fit a linear regression model
+model <- lm(adr ~ children + stays_in_week_nights, data = merged_loc)
+
+# Print model summary
+summary(model)
+
+#####################
+library(ggplot2)
+library(ggpubr)
+
+# Fit linear regression model
+lm_model <- lm(adr ~ children, data = hotel_subset)
+
+# Plot linear regression model
+ggscatter(hotel_subset, x = "children", y = "adr", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Children", ylab = "ADR",
+          title = "Linear Regression Model: ADR vs. Children")
+
+################################################################
+
+# Plot a scatter plot to visualize the relationship between ADR and Lead Time
+ggplot(hotel_subset, aes(x = lead_time, y = adr)) +
+  geom_point() +
+  labs(x = "Lead Time", y = "ADR",
+       title = "Scatter Plot of ADR vs Lead Time")
+
+# Fit a linear regression model between ADR and Lead Time
+lm_adr_lead <- lm(adr ~ lead_time, data = hotel_subset)
+summary(lm_adr_lead)
+# Plot the linear regression line on top of the scatter plot
+ggplot(hotel_subset, aes(x = lead_time, y = adr)) +
+  geom_point() +
+  labs(x = "Lead Time", y = "ADR",
+       title = "Scatter Plot of ADR vs Lead Time with Regression Line") +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "red")
+
+
+
+
+##########################################################################
+#########################################################################
+############CHAPTER OF CHOICE###############
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -271,25 +360,7 @@ create_report(hotel_subset)
 
 
 
-##################################
-###converting data to numeric for correlation
-date_num <- as.numeric(unique(merged_loc$arrival_date))
-date_num
 
-plot(date_num,merged_loc$stays_in_week_nights)
 
-cor(x = date_num,y = merged_loc$stays_in_week_nights )
 
-# adr== average daily rate == estimate of average price 
-# charged per room per night
-plot(hotel_subset$adr, hotel_subset$is_canceled)
-fit <- lm(hotel_subset$is_canceled~ hotel_subset$adr)
-abline(fit)
-summary(fit)
-
-boxplot(hotel_subset$adr)
-
-outliers <- subset(hotel_subset, hotel_subset$adr >400)
-
-outliers
 
