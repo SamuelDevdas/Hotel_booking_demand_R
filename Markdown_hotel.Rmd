@@ -286,8 +286,54 @@ The resulting plot can be used to explore the distribution of hotel bookings and
 
 ---
 
+## Modelling
 
+### Two-sample t-test 
 
+The code below performs a two-sample t-test to compare the Average Daily Rate (ADR) between City and Resort hotels. The first step in performing a t-test is to create two subsets of the ADR data: one for City hotels and one for Resort hotels. This is achieved using the subset() function in R, which extracts the ADR data for the City and Resort hotels separately using the hotel column.
+    
+    city_adr <- subset(merged_loc, hotel == "City Hotel")$adr
+    resort_adr <- subset(merged_loc, hotel == "Resort Hotel")$adr
+    
+Next, the t.test() function is used to perform a two-sample t-test, which calculates the difference between the means of the two subsets of data and determines whether this difference is statistically significant. The results of the t-test are stored in the t_test_result variable.
+
+    t_test_result <- t.test(city_adr, resort_adr)
+
+Finally, the results of the t-test are printed to the console using the variable t_test_result.
+
+    t_test_result
+    
+---
+
+### Linear Regression - ADR and Children
+
+The number of children in a booking could potentially affect the ADR, as families with children may require additional accommodations or services that could drive up the price. To investigate this relationship, we fit a linear regression model between ADR and Children, as well as stays in weeknights, using the merged_loc dataset.
+
+    #Fit a linear regression model between ADR and Children and stays in weeknights
+    model <- lm(adr ~ children + stays_in_week_nights, data = merged_loc)
+
+    #Print model summary
+    summary(model)
+
+The output of the model summary shows that the coefficient for Children is positive, indicating that as the number of children increases, the ADR tends to increase as well. Additionally, the coefficient for stays in weeknights is also positive, indicating that as the number of stays in weeknights increases, the ADR tends to increase.
+
+Next, we focus on the relationship between ADR and Children in the hotel_subset dataset using a scatter plot and linear regression model. To achieve this, we use the ggplot2 and ggpubr libraries to plot a scatter plot and overlay a linear regression line.
+
+    #Load required libraries
+    library(ggplot2)
+    library(ggpubr)
+    
+    #Fit linear regression model
+    lm_model <- lm(adr ~ children, data = hotel_subset)
+    
+    #Plot linear regression model
+    ggscatter(hotel_subset, x = "children", y = "adr",
+    add = "reg.line", conf.int = TRUE,
+    cor.coef = TRUE, cor.method = "pearson",
+    xlab = "Children", ylab = "ADR",
+    title = "Linear Regression Model: ADR vs. Children")
+
+The scatter plot with the linear regression line confirms the output of the model summary.
 
 
 
