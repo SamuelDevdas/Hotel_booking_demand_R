@@ -190,6 +190,17 @@ ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
   ylab("Number of Bookings") +
   ggtitle("Number of Bookings over Time")
 
+#############################################################
+
+
+
+
+
+###############################################################
+
+
+
+
 
 
 ######################################################
@@ -325,7 +336,27 @@ ggplot(hotel_subset, aes(x = lead_time, y = adr)) +
 ############CHAPTER OF CHOICE###############
 
 
+#################################################################
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(gganimate)
 
+hotel_data_agg <- merged_loc %>% 
+  group_by(year = year(merged_loc$arrival_date), month = month(merged_loc$arrival_date)) %>% 
+  summarize(bookings = n())
+
+# Plot the line graph and create animation frames
+p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
+  geom_line() +
+  geom_point(color = "red", size = 10) +  # set size to 5
+  xlab("Months \nYear- 2015 to 2016") +
+  ylab("Number of Bookings") +
+  ggtitle("Number of Bookings over Time") +
+  transition_reveal(month)
+
+# Render animation as a GIF
+animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 
 
 
@@ -357,8 +388,6 @@ install.packages("DataExplorer")
 library(DataExplorer)
 
 create_report(hotel_subset)
-
-
 
 
 
