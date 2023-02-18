@@ -334,8 +334,6 @@ ggplot(hotel_subset, aes(x = lead_time, y = adr)) +
 ##########################################################################
 #########################################################################
 ############CHAPTER OF CHOICE###############
-
-
 #################################################################
 library(dplyr)
 library(lubridate)
@@ -359,8 +357,31 @@ p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
 animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 
 
+################################################################
+#############Modern theme###########################
 
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(gganimate)
+library(ggthemes)
 
+hotel_data_agg <- merged_loc %>% 
+  group_by(year = year(merged_loc$arrival_date), month = month(merged_loc$arrival_date)) %>% 
+  summarize(bookings = n())
+
+# Plot the line graph and create animation frames
+p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
+  geom_line() +
+  geom_point(color = "red", size = 5) +
+  xlab("Months \nYear- 2015 to 2016") +
+  ylab("Number of Bookings") +
+  ggtitle("Number of Bookings over Time") +
+  transition_reveal(month) +
+  theme_economist() # using a modern theme from ggthemes package
+
+# Render animation as a GIF
+animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 
 
 
