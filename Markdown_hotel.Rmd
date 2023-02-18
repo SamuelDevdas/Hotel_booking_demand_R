@@ -335,17 +335,50 @@ Next, we focus on the relationship between ADR and Children in the hotel_subset 
 
 The scatter plot with the linear regression line confirms the output of the model summary.
 
+---
 
+## Chapter of Choice - Animation and Improvements of Visualization
 
+In this section, we'll improve our previous visualization - 'Aggregate Booking demand of hotels from 2015 to 2016' using the ggplot2 package in R.
 
+### Process
 
+We'll start by loading the necessary packages and using the base code from the original line plot.
 
+    library(dplyr)
+    library(lubridate)
+    library(ggplot2)
+    library(ggthemes)
+    
+    # Aggregate data by year and month
+    hotel_data_agg <- hotel_data %>% 
+      group_by(year = year(arrival_date), month = month(arrival_date)) %>% 
+      summarize(bookings = n())
+    
+    
+    # Plot the line graph and create animation frames
+    p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
+      geom_line() +
+      geom_point(color = "red", size = 5) +
+      xlab("Months \nYear- 2015 to 2016") +
+      ylab("Number of Bookings") +
+      ggtitle("Number of Bookings over Time") +
+      transition_reveal(month) +
+      theme_economist() 
+  
 
+In the code above, we create a line graph with ggplot2, where the x-axis represents the month and the y-axis represents the number of bookings. We also use the geom_line() function to draw the line, geom_point() to add the red points representing the bookings, and ggtitle() to add a title to the graph. We then add an animation to the graph using gganimate's transition_reveal() function, which creates a smooth transition between frames, and apply a modern theme with theme_economist() from ggthemes package.
 
+### Render animation as a GIF
 
+We can now render the graph as a GIF to see the booking demand over time.
 
+    library(gganimate)
+    animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 
+The animated graph shows the increase in booking demand from January 2015 to August 2016. The number of bookings peaked in July 2016 with over 3000 bookings.
 
+Overall, the visualization provides an informative and engaging way to analyze the booking demand of hotels over time.
 
 
 
