@@ -15,7 +15,9 @@ output:
     #highlight: kate
     #highlight: pygments
     #highlight: tango
+warning: FALSE
 ---
+
 
 ## Introduction
 
@@ -25,21 +27,14 @@ Hotel industry is a significant contributor to the economy of many countries. In
 
 ### Data Loading
 To begin our analysis, we first load the dataset into R. The dataset we will be using is the "hotel_bookings.csv".
-```{r, results='hide', collapse=TRUE}
+```{r}
 
  # Load data_hotelset .csv as data_hotel
-    data_hotel <- read.csv("hotel_bookings.csv")
+data_hotel <- read.csv("hotel_bookings.csv")
 # We can take a quick look at the data by calling the head() function.
 head(data_hotel)
 ```
 
-We can also view the dataset in a spreadsheet format by calling the View() function.
-```{r}
-  View(data_hotel)
-```
-
-  
-    
 To get a better understanding of the structure of the dataset, we can use the str() function. This function provides information about the structure of the dataset, such as the number of observations, the number of variables, and the type of data in each variable.
 ```{r}
  str(data_hotel)
@@ -89,10 +84,10 @@ Now our dataset has 11,939 rows.
 ### Obtaining Geographic Location Data for Hotel Subsets
 
 As we continue with the analysis of hotel booking demand, we realized that the hotel_subset dataset we had created earlier lacks geolocation data. To address this, we obtained a new dataset called country_loc that contains the geographic coordinates of various countries.
-We loaded the country_loc dataset using the read.csv() function and viewed the data using the View() function.
+We loaded the country_loc dataset using the read.csv() function and viewed the data using the head() function.
 ```{r}
 country_loc <- read.csv("countries_codes_and_coordinates.csv")
-    View(country_loc)
+    head(country_loc)
 
 ```
 
@@ -236,9 +231,10 @@ In this section, we will investigate the seasonality of hotel bookings. We will 
 
 First, we load the required packages: dplyr and lubridate. We will use the dplyr package to aggregate data and lubridate to extract year and month from the arrival date.
 
-```{r, echo = TRUE, include = FALSE}
+```{r, results = 'hide', message=FALSE}
 library(dplyr)
 library(lubridate)
+options(dplyr.summarise.inform = FALSE)
 ```
 
 Then, we aggregate the data by counting the number of bookings each month for both years (2015 and 2016). We store the aggregated data in a new data frame called "hotel_data_agg".
@@ -326,7 +322,7 @@ A bar plot is then created using barplot(), where the ADR values are plotted on 
 This code uses the ggplot2 and ggmap libraries to create an interactive world map with plotted hotel data points, which can be used to visually explore the geographical distribution of hotel bookings and lead times across countries.
 
 First, the code loads the required libraries.
-```{r}
+```{r,results = 'hide', message=FALSE}
     library(ggplot2)
     library(ggmap)
     library(ggiraph)
@@ -342,7 +338,7 @@ Next, the map_data() function is used to create data for world coordinates.
 
 
 The ggplot() function is then used to create the world map with geom_map(). This function takes the world coordinates as input to plot the map. The color, fill, and size parameters are used to specify the color and size of the points.
-```{r}
+```{r, warning=FALSE}
     p <- ggplot() +
         
       # geom_map() function takes world coordinates as input to plot world map
@@ -402,7 +398,8 @@ Finally, the results of the t-test are printed to the console using the variable
     t_test_result
 ```
 
-The Welch Two Sample t-test was used to compare the means of two independent groups represented by city_adr and resort_adr variables. The p-value is very small, indicating that the null hypothesis of equal means can be rejected in favor of the alternative hypothesis that the two groups are not the same. The 95% confidence interval suggests that the true difference in means lies between 7.93 and 12.19, and the sample means indicate that the city_adr group has a significantly higher mean value than the resort_adr group. Overall, there is a statistically significant difference in the mean values of the two groups.   
+The Welch Two Sample t-test was used to compare the means of two independent groups represented by city_adr and resort_adr variables. The p-value is very small, indicating that the null hypothesis of equal means can be rejected in favor of the alternative hypothesis that the two groups are not the same. The 95% confidence interval suggests that the true difference in means lies between 7.93 and 12.19, and the sample means indicate that the city_adr group has a significantly higher mean value than the resort_adr group. Overall, there is a statistically significant difference in the mean values of the two groups.  
+
 ---
 
 ### Linear Regression - ADR and Children
@@ -450,12 +447,17 @@ In this section, we'll improve our previous visualization - 'Aggregate Booking d
 ### Process
 
 We'll start by loading the necessary packages and using the base code from the original line plot.
+
+```{r, results='hide'}
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(ggthemes)
+library(gganimate)
+```
+
 ```{r}
-  library(dplyr)
-    library(lubridate)
-    library(ggplot2)
-    library(ggthemes)
-    library(gganimate)
+
     
     # Aggregate data by year and month
     hotel_data_agg <- hotel_subset %>% 
@@ -482,7 +484,7 @@ In the code above, we create a line graph with ggplot2, where the x-axis represe
 ### Render animation as a GIF
 
 We can now render the graph as a GIF to see the booking demand over time.
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(gganimate)
 animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 ```
