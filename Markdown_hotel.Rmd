@@ -4,58 +4,209 @@ author: "Samuel Devdas & RituRaj Singh"
 date: ""
 output:
   prettydoc::html_pretty:
-    #theme: architect
-    #theme: cayman
-    theme: blacklight
-    #theme: adobe
-    #theme: sky
-    #theme: journal
-
+    theme: cayman
     highlight: github
-    #highlight: kate
-    #highlight: pygments
-    #highlight: tango
+
 warning: FALSE
 ---
 
 
 ## Introduction
 
-Hotel industry is a significant contributor to the economy of many countries. In this report, we will explore the booking demand in the hotel industry. We will analyze the data and identify patterns that can be useful in making informed decisions.
+The hotel industry is a crucial part of the global economy, with a significant contribution to many countries' economies. In this report, we aim to provide insights into the booking demand in the hotel industry by analyzing a Kaggle dataset.
+
+The purpose of this analysis is to identify patterns in the data that can be useful in making informed decisions for hotel owners and managers. By exploring trends in booking demand, we can gain valuable insights into customer behavior and preferences, which can ultimately lead to better management of resources and increased revenue.
+
+In the following sections, we will describe the data sources, methods, and results of our analysis, with a focus on providing a clear and comprehensive narrative that is easy to follow and understand. By the end of this report, we hope to have demonstrated the value of data-driven decision-making in the hotel industry and provided actionable insights that can be applied in real-world settings.
+
+---
+
+---
+
+## Data Sources
+
+The data used for this analysis is sourced from the "Hotel Booking Demand" dataset available on Kaggle. This dataset contains information on hotel bookings made by customers. The data was originally sourced from two hotels, one located in Portugal and the other in Tunisia.
+
+The dataset consists of:
+
+hotel_bookings.csv: This file contains data on bookings made from July 2015 to August 2017. It contains 32 columns and 119,390 rows.
+
+The columns in the dataset include information on the customer, the booking, and details about the stay.
+
+Here is a table summarizing the columns and their descriptions in the hotel_bookings.csv file:
+
+<details>
+<summary>Click to show/hide code</summary>
+```{r, include= TRUE, echo=TRUE}
+#create a table with column name and description using kableExtra package
+# Read hotel booking data from CSV file
+hotel_data <- read.csv("hotel_bookings.csv", stringsAsFactors = FALSE)
+
+# Create a vector of column names
+column_names <- colnames(hotel_data)
+
+# Create a vector of column descriptions
+description <- c("Unique identifier for the booking", 
+                 "ID of the hotel where the booking was made",
+                 "ID of the hotel type",
+                 "Number of occupants",
+                 "Date of arrival",
+                 "Date of departure",
+                 "Number of days between arrival and departure",
+                 "Number of previous bookings by the customer",
+                 "Number of previous bookings for the specific hotel",
+                 "Number of previous bookings for the same customer in the same hotel",
+                 "Indication if the booking was canceled (1) or not (0)",
+                 "Type of booking",
+                 "Average daily rate as defined by dividing the sum of all lodging transactions by the total number of staying nights",
+                 "Indication of whether the customer made a deposit to guarantee the booking",
+                 "Date on which the deposit was made",
+                 "Number of customer complaints",
+                 "ID of the country of origin",
+                 "Indication of whether the booking is for a resort hotel (1) or not (0)",
+                 "Indication of whether the booking is for a city hotel (1) or not (0)",
+                 "Number of adults",
+                 "Number of children",
+                 "Number of babies",
+                 "Booking type",
+                 "Source of the booking",
+                 "Market segment designation",
+                 "Booking distribution channel",
+                 "Name of the group if booking is associated with a group",
+                 "Indication if the booking was canceled (1) or not (0)",
+                 "Date at which the status was set to 'Canceled'",
+                 "Indication of whether the booking was canceled before the arrival date (1) or not (0)",
+                 "Indication of the final status of the booking",
+                 "Date at which the final status was set")
+
+library(kableExtra)
+
+# Create a data frame for column names and descriptions
+desc_df <- data.frame(column_names, description)
+
+# Use kable function to format the table
+kable(desc_df, 
+      col.names = c("Column Name", "Description"), 
+      align = "c") %>%
+  kable_styling(full_width = F, 
+                position = "center", 
+                font_size = 14)
+```
+</details>
+
+```{r, include= TRUE, echo=FALSE}
+#create a table with column name and description using kableExtra package
+# Read hotel booking data from CSV file
+hotel_data <- read.csv("hotel_bookings.csv", stringsAsFactors = FALSE)
+
+# Create a vector of column names
+column_names <- colnames(hotel_data)
+
+# Create a vector of column descriptions
+description <- c("Unique identifier for the booking", 
+                 "ID of the hotel where the booking was made",
+                 "ID of the hotel type",
+                 "Number of occupants",
+                 "Date of arrival",
+                 "Date of departure",
+                 "Number of days between arrival and departure",
+                 "Number of previous bookings by the customer",
+                 "Number of previous bookings for the specific hotel",
+                 "Number of previous bookings for the same customer in the same hotel",
+                 "Indication if the booking was canceled (1) or not (0)",
+                 "Type of booking",
+                 "Average daily rate as defined by dividing the sum of all lodging transactions by the total number of staying nights",
+                 "Indication of whether the customer made a deposit to guarantee the booking",
+                 "Date on which the deposit was made",
+                 "Number of customer complaints",
+                 "ID of the country of origin",
+                 "Indication of whether the booking is for a resort hotel (1) or not (0)",
+                 "Indication of whether the booking is for a city hotel (1) or not (0)",
+                 "Number of adults",
+                 "Number of children",
+                 "Number of babies",
+                 "Booking type",
+                 "Source of the booking",
+                 "Market segment designation",
+                 "Booking distribution channel",
+                 "Name of the group if booking is associated with a group",
+                 "Indication if the booking was canceled (1) or not (0)",
+                 "Date at which the status was set to 'Canceled'",
+                 "Indication of whether the booking was canceled before the arrival date (1) or not (0)",
+                 "Indication of the final status of the booking",
+                 "Date at which the final status was set")
+
+library(kableExtra)
+
+# Create a data frame for column names and descriptions
+desc_df <- data.frame(column_names, description)
+
+# Use kable function to format the table
+kable(desc_df, 
+      col.names = c("Column Name", "Description"), 
+      align = "c") %>%
+  kable_styling(full_width = F, 
+                position = "center", 
+                font_size = 13)
+```
 
 ---
 
 ### Data Loading
 To begin our analysis, we first load the dataset into R. The dataset we will be using is the "hotel_bookings.csv".
-```{r}
-
- # Load data_hotelset .csv as data_hotel
+```{r,include=TRUE, eval= FALSE}
+# Load data_hotelset .csv as data_hotel
 data_hotel <- read.csv("hotel_bookings.csv")
 # We can take a quick look at the data by calling the head() function.
 head(data_hotel)
 ```
 
+<details>
+<summary>Click to show/hide output</summary>
+```{r, echo=FALSE, eval=TRUE}
+# Load data_hotelset .csv as data_hotel
+data_hotel <- read.csv("hotel_bookings.csv")
+# We can take a quick look at the data by calling the head() function.
+head(data_hotel)
+```
+</details>
+
+---
+
 To get a better understanding of the structure of the dataset, we can use the str() function. This function provides information about the structure of the dataset, such as the number of observations, the number of variables, and the type of data in each variable.
-```{r}
+
+```{r, include=TRUE, eval= FALSE}
  str(data_hotel)
 ```
 
-   
+<details>
+<summary>Click to show/hide output</summary>
+```{r, echo=FALSE, eval=TRUE}
+ str(data_hotel)
+```
+</details>
 
 Another useful function for getting a quick overview of the data is the summary() function. This function provides summary statistics for each variable in the dataset.
-```{r}
+
+```{r, include=TRUE, eval= FALSE}
 summary(data_hotel)
 ```
 
-    
-    
+<details>
+<summary>Click to show/hide output</summary>
+```{r, echo=FALSE, eval=TRUE}
+summary(data_hotel)
+```
+</details>
+
+---
+
 We can also check for missing values in the dataset. If the missing values are few and negligible, we can safely ignore them.
+
 ```{r}
 sum(is.na(data_hotel))
 ```
 
-    
-    
 In our case, we have only 4 missing values, which we can safely ignore as insignificant.
 
 ---
@@ -73,10 +224,11 @@ The original dataset has 119,390 rows. As the dataset size is too large, we will
     # Select a random subset of 10% of the size of the original dataset
     subset_size <- round(0.1 * dataset_size)
     hotel_subset <- data_hotel[sample(dataset_size, subset_size), ]
+    
+    # Display number of rows in hotel_subset
+    nrow(hotel_subset)
 ```
 
-    
-    
 Now our dataset has 11,939 rows.
 
 ---
@@ -87,11 +239,11 @@ As we continue with the analysis of hotel booking demand, we realized that the h
 We loaded the country_loc dataset using the read.csv() function and viewed the data using the head() function.
 ```{r}
 country_loc <- read.csv("countries_codes_and_coordinates.csv")
-    head(country_loc)
-
+head(country_loc)
 ```
 
-    
+---
+
 ---
 
 ### Data Cleaning
@@ -101,23 +253,20 @@ We start by combining the year, month, and day columns into a single date column
  hotel_subset$arrival_date <- as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
 ```
 
-   
-
 We then discovered that the country column in the hotel_subset dataset and the Alpha.3.code column in the country_loc dataset have different lengths. To investigate further, we used the length function to check the number of unique values in each column, and found that they differ.
+
 ```{r}
 length(unique(hotel_subset$country))
     length(unique(country_loc$Alpha.3.code))
 ```
 
-    
-
+  
 Upon checking if the column names match, we found that there are no matching values between the two columns.
 ```{r}
 intersect(x = hotel_subset$country,y = country_loc$Alpha.3.code)
 ```
 
     
-
 To further investigate the differences, we examined the values in the Alpha.3.code column and discovered that they have leading spaces. To get rid of these spaces, we use the str_remove function from the stringr library.
 ```{r}
  library(stringr)
@@ -141,6 +290,8 @@ Finally, we verified that the resulting dataset, merged_loc, has geolocation per
 
 ```
 
+
+---
 
 ---
 
@@ -177,6 +328,8 @@ We confirm that all the variables are now numeric by using the str function.
 
 ```
 
+
+---
 
 ---
 
@@ -373,6 +526,8 @@ The resulting plot can be used to explore the distribution of hotel bookings and
 
 ---
 
+---
+
 ## Modelling
 
 ### Two-sample t-test 
@@ -440,7 +595,9 @@ The scatter plot with the linear regression line confirms the output of the mode
 
 ---
 
-## Chapter of Choice - Animation and Improvements of Visualization
+---
+
+## Chapter of Choice - Animation of Visualization and Improvement of Visual Appeal of the Report
 
 In this section, we'll improve our previous visualization - 'Aggregate Booking demand of hotels from 2015 to 2016' using the ggplot2 package in R.
 
@@ -496,5 +653,26 @@ The animated graph shows the increase in booking demand from January 2015 to Aug
 Overall, the visualization provides an informative and engaging way to analyze the booking demand of hotels over time.
 
 
+### Improvement of Visual Appeal of the Report
+
+The visual appeal of a report plays a crucial role in engaging readers and communicating insights effectively.
+
+We used the prettydoc R package to enhance the visual appeal of our report. With the YAML header output: prettydoc::html_pretty, we selected the cayman theme, which has a modern and sleek design. Additionally, we specified the highlight style to be github, which adds syntax highlighting to our code chunks. These small changes have a big impact on the readability and aesthetics of the final report.
+
+```{r}
+
+#title: "Analysis of Hotel Booking Demand"
+#author: "Samuel Devdas & RituRaj Singh"
+#date: ""
+#output:
+  #prettydoc::html_pretty:
+    #theme: cayman
+    #highlight: github
+
+#warning: FALSE
+
+```
+
+The warning: FALSE line in the YAML header of the R Markdown document is used to suppress the display of warning messages during the knitting of the document. This can be useful in cases where warnings are not relevant to the analysis being presented or when warnings clutter the output and make it more difficult to read.
 
 
