@@ -153,7 +153,7 @@ kable(desc_df,
 ---
 
 ### Data Loading
-To begin our analysis, we first load the dataset into R. The dataset we will be using is the "hotel_bookings.csv".
+To begin our analysis, we first load the dataset, "hotel_bookings.csv" into R. 
 ```{r,include=TRUE, eval= FALSE}
 # Load data_hotelset .csv as data_hotel
 data_hotel <- read.csv("hotel_bookings.csv")
@@ -216,17 +216,17 @@ In our case, we have only 4 missing values, which we can safely ignore as insign
 The original dataset has 119,390 rows. As the dataset size is too large, we will select a random subset of 10% of the size of the original dataset to perform our analysis. To ensure reproducibility, we set a random seed.
 ```{r}
 # Calculate the size of the dataset
-    dataset_size <- nrow(data_hotel)
+dataset_size <- nrow(data_hotel)
     
-    # Set the random seed to ensure reproducibility
-    set.seed(123) 
+# Set the random seed to ensure reproducibility
+set.seed(123) 
     
-    # Select a random subset of 10% of the size of the original dataset
-    subset_size <- round(0.1 * dataset_size)
-    hotel_subset <- data_hotel[sample(dataset_size, subset_size), ]
+# Select a random subset of 10% of the size of the original dataset
+subset_size <- round(0.1 * dataset_size)
+hotel_subset <- data_hotel[sample(dataset_size, subset_size), ]
     
-    # Display number of rows in hotel_subset
-    nrow(hotel_subset)
+# Display number of rows in hotel_subset
+nrow(hotel_subset)
 ```
 
 Now our dataset has 11,939 rows.
@@ -235,7 +235,7 @@ Now our dataset has 11,939 rows.
 
 ### Obtaining Geographic Location Data for Hotel Subsets
 
-As we continue with the analysis of hotel booking demand, we realized that the hotel_subset dataset we had created earlier lacks geolocation data. To address this, we obtained a new dataset called country_loc that contains the geographic coordinates of various countries.
+As we continue with the analysis of hotel booking demand, we realized that the hotel_subset dataset we had created earlier lacks geolocation data. To address this, we obtained a new [dataset](https://gist.github.com/tadast/8827699) from Github and called it country_loc that contains the geographic coordinates of various countries.
 We loaded the country_loc dataset using the read.csv() function and viewed the data using the head() function.
 ```{r}
 country_loc <- read.csv("countries_codes_and_coordinates.csv")
@@ -246,18 +246,21 @@ head(country_loc)
 
 ---
 
-### Data Cleaning
+## Data Cleaning
 
+We previously found out while  inspecting the data_hotel variable that the arrival date exists as 3 separate columns, namely arrival_date_year, arrival_date_year, arrival_date_month, and arrival_date_day_of_month.
 We start by combining the year, month, and day columns into a single date column to simplify the data format. We can do this using the as.Date function along with paste.
 ```{r}
- hotel_subset$arrival_date <- as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
+# New combined arrival_date column 
+hotel_subset$arrival_date <- as.Date(with(hotel_subset,paste(arrival_date_year,arrival_date_month,arrival_date_day_of_month,sep="-")),format = "%Y-%B-%d")
+head(hotel_subset$arrival_date)
 ```
 
 We then discovered that the country column in the hotel_subset dataset and the Alpha.3.code column in the country_loc dataset have different lengths. To investigate further, we used the length function to check the number of unique values in each column, and found that they differ.
 
 ```{r}
 length(unique(hotel_subset$country))
-    length(unique(country_loc$Alpha.3.code))
+length(unique(country_loc$Alpha.3.code))
 ```
 
   
@@ -269,24 +272,30 @@ intersect(x = hotel_subset$country,y = country_loc$Alpha.3.code)
     
 To further investigate the differences, we examined the values in the Alpha.3.code column and discovered that they have leading spaces. To get rid of these spaces, we use the str_remove function from the stringr library.
 ```{r}
- library(stringr)
-    country_loc$Alpha.3.code <- str_remove(string= country_loc$Alpha.3.code,pattern = "^ +")  
+# Investigate Alpha.3.code column values
+head(country_loc$Alpha.3.code)
+```
+
+
+```{r}
+# Remove leading spaces 
+library(stringr)
+country_loc$Alpha.3.code <- str_remove(string= country_loc$Alpha.3.code,pattern = "^ +")  
 
 ```
 
-   
+### Combining Datasets for Geolocation data  
 After removing the leading spaces, we checked if the values in the two columns intersect, and found that they do. Thus, we merged the two datasets using the merge function, joining them on the country column from hotel_subset and the Alpha.3.code column from country_loc.
 ```{r}
- merged_loc <- merge(hotel_subset, country_loc, 
-                    by.x = "country", by.y = "Alpha.3.code")
+ merged_loc <- merge(hotel_subset, country_loc, by.x = "country", by.y = "Alpha.3.code")
 
 ```
 
    
 Finally, we verified that the resulting dataset, merged_loc, has geolocation per country without any extra missing values generated.
 ```{r}
-    table(is.na(merged_loc$Country))
-    sum(is.na(merged_loc))
+table(is.na(merged_loc$Country))
+sum(is.na(merged_loc))
 
 ```
 
@@ -299,32 +308,32 @@ Finally, we verified that the resulting dataset, merged_loc, has geolocation per
 
 After merging the two datasets, we need to prepare and explore the data further. We create a data frame df that contains two columns: "index" containing indices of columns in the data frame merged_loc and "colnames" containing names of columns in merged_loc. This will help us in indexing the columns later.
 ```{r}
-    df <- data.frame(index = 1:length(colnames(merged_loc)),
+df <- data.frame(index = 1:length(colnames(merged_loc)),
                  colnames = colnames(merged_loc))
-    head(df)
+head(df)
 
 ```
 
-    
-We identify the columns that contain numerical values and store them in the numeric_columns variable. This will be used later to filter out non-numeric variables for using correlation heat map function.
-```{r}
-    numeric_columns <- names(merged_loc)[sapply(merged_loc, is.numeric)]
-    print(numeric_columns)
+We create a new data frame cor_hotel by filtering out the columns of interest from the merged_loc data frame using the indexes. 
+
+```{r, echo= TRUE, eval=FALSE}
+cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
+head(cor_hotel)
 
 ```
 
-    
-We create a new data frame cor_hotel by filtering out the non-numeric columns from the merged_loc data frame using the numeric_columns variable. This data frame cor_hotel now contains only the numerical variables.    
-```{r}
-    cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
-    head(cor_hotel)
+<details>
+<summary>Click to show/hide output</summary>
+```{r, echo=FALSE, eval=TRUE }
+cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
+head(cor_hotel)
 
-```
-  
+``` 
+<details>
 
-We confirm that all the variables are now numeric by using the str function.
+We confirm that all the variables are now non-character type by using the str function.
 ```{r}
-    str(cor_hotel)
+str(cor_hotel)
 
 ```
 
@@ -335,40 +344,32 @@ We confirm that all the variables are now numeric by using the str function.
 
 ## Data visualization
 
-We start by filtering out non-numeric variables from the dataset to calculate the correlation matrix. The resulting dataframe is called cor_hotel.
-```{r}
-    # Filter out non-numeric variables
-    cor_hotel <- merged_loc[c(3,4,9,10,11,12,13,17,18,19,22,26,28,29,30)]
-
-```
-
-
 ### Correlation heatmap
 
-Next, we calculate the correlation matrix using the cor function. We then use the ggplot2 and reshape2 libraries to create a heatmap with column names on both axes.
+We calculate the correlation matrix using the cor function. We then use the ggplot2 and reshape2 libraries to create a heatmap with column names on both axes.
 
 We first melt the correlation matrix into a long format using the melt function, and then set the column names for the melted dataframe. Finally, we plot the heatmap using the ggplot2 package, using geom_tile to fill each cell, scale_fill_gradient2 to set the color gradient, and theme and labs to add appropriate labeling.
 ```{r}
-    # Calculate the correlation matrix
-    corr_hotel <- cor(cor_hotel)
-    
-    # Create a heatmap with column names on both axes
-    library(ggplot2)
-    library(reshape2)
-    
-    # Melt the correlation matrix into long format
-    corr_melted <- melt(corr_hotel)
-    
-    # Set column names for melted data frame
-    colnames(corr_melted) <- c("Var1", "Var2", "Corr")
-    
-    # Plot the heatmap with ggplot2
-    ggplot(data = corr_melted, aes(x = Var1, y = Var2, fill = Corr)) +
-      geom_tile() +
-      scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1,1)) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-      labs(x = "", y = "", fill = "Correlation")
+# Calculate the correlation matrix
+corr_hotel <- cor(cor_hotel)
+
+# Create a heatmap with column names on both axes
+library(ggplot2)
+library(reshape2)
+
+# Melt the correlation matrix into long format
+corr_melted <- melt(corr_hotel)
+
+# Set column names for melted data frame
+colnames(corr_melted) <- c("Var1", "Var2", "Corr")
+
+# Plot the heatmap with ggplot2
+ggplot(data = corr_melted, aes(x = Var1, y = Var2, fill = Corr)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0, limit = c(-1,1)) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "", y = "", fill = "Correlation")
 
 ```
 
@@ -414,17 +415,21 @@ ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
 
 The lead_time column is extracted from the dataset and is used to create a histogram that shows the frequency distribution of lead times. The hist() function is used to create the histogram.
 ```{r}
+# Load ggplot2 library
+library(ggplot2)
+
 # Extract lead time column
-    lead_time <- merged_loc$lead_time
-    
-    # Create histogram of lead times
-    hist(lead_time, 
-         main = "Histogram of Lead Times", 
-         xlab = "Lead Time (days)", 
-         col = "blue")
+lead_time <- merged_loc$lead_time
+
+# Create ggplot histogram of lead times
+ggplot(merged_loc, aes(x = lead_time)) +
+  geom_histogram(binwidth = 30, color = "black", fill = "lightblue") +
+  labs(title = "Histogram of Lead Times",
+       x = "Lead Time (days)",
+       y = "Count")
 
 ```
-
+*The lead times histogram shows that the majority of bookings in the dataset have a short lead time, with the highest peak occurring at around 0-30 days. The plot also shows a long tail towards the right, indicating that there are also bookings with longer lead times.*
     
 ---
 
@@ -432,20 +437,24 @@ The lead_time column is extracted from the dataset and is used to create a histo
 
 In order to examine the distribution of booking cancellations in the dataset, a barchart is generated using ggplot2 package. The count of cancelled and not-cancelled bookings is represented in the barchart.
 ```{r}
- library(ggplot2)
+library(ggplot2)
 
-    # add a new column to identify cancelled or not
-    merged_loc$cancelled <- ifelse(merged_loc$is_canceled == 1, "cancelled", "not cancelled")
+# add a new column to identify cancelled or not
+merged_loc$cancelled <- ifelse(merged_loc$is_canceled == 1, "cancelled", "not cancelled")
 
-    # plot barchart with count of cancelled and not-cancelled bookings
-    ggplot(merged_loc, aes(x=cancelled)) + 
-      geom_bar() +
-      labs(title = "Count of Cancelled and Not-cancelled Bookings",
-          x = "Cancellation Status",
-          y = "Count")
+# plot barchart with count of cancelled and not-cancelled bookings
+ggplot(merged_loc, aes(x = cancelled, fill = cancelled)) +
+  geom_bar() +
+  scale_fill_manual(values = c("lightblue", "darkblue"), 
+                    labels = c("Not Cancelled", "Cancelled")) +
+  labs(title = "Count of Cancelled and Not-cancelled Bookings",
+       x = "Cancellation Status",
+       y = "Count")
+
+
 
 ```
-
+*The chart clearly shows that there are more not-cancelled bookings than cancelled bookings in the dataset.*
    
 ---
 
@@ -457,16 +466,18 @@ A bar plot is then created using barplot(), where the ADR values are plotted on 
 
     
 ```{r}
-    # Calculate the mean adr for each hotel type
-    mean_adr_by_hotel_type <- aggregate(adr ~ hotel, data = merged_loc, mean)
+# Calculate the mean adr for each hotel type
+mean_adr_by_hotel_type <- aggregate(adr ~ hotel, data = merged_loc, mean)
 
-    # Plot a bar plot to compare adr between city and resort hotels
-    barplot(mean_adr_by_hotel_type$adr, names.arg = mean_adr_by_hotel_type$hotel, 
-            xlab = "Hotel Type", ylab = "Average Daily Rate (ADR)", 
-            main = "Comparison of Average Daily Rate (ADR) between City and Resort Hotels")
+# Create a ggplot bar plot
+ggplot(mean_adr_by_hotel_type, aes(x = hotel, y = adr, fill = hotel)) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_fill_manual(values = c("darkblue", "lightblue")) +
+  labs(title = "Comparison of Average Daily Rate (ADR) between City and Resort Hotels",
+       x = "Hotel Type", y = "Average Daily Rate (ADR)")
 
 ```
-    
+*The bar plot conclusively shows that the average daily rate of the city hotels is higher than that of the resort hotels.*    
 
 ---
 
@@ -476,54 +487,53 @@ This code uses the ggplot2 and ggmap libraries to create an interactive world ma
 
 First, the code loads the required libraries.
 ```{r,results = 'hide', message=FALSE}
-    library(ggplot2)
-    library(ggmap)
-    library(ggiraph)
+library(ggplot2)
+library(ggmap)
+library(ggiraph)
 
 ```
 
 
 Next, the map_data() function is used to create data for world coordinates.
 ```{r}
-    world_coordinates <- map_data("world")
+world_coordinates <- map_data("world")
 
 ```
 
 
 The ggplot() function is then used to create the world map with geom_map(). This function takes the world coordinates as input to plot the map. The color, fill, and size parameters are used to specify the color and size of the points.
 ```{r, warning=FALSE}
-    p <- ggplot() +
-        
-      # geom_map() function takes world coordinates as input to plot world map
-      geom_map(
-        data = world_coordinates, map = world_coordinates,
-        aes(long, lat, map_id = region), 
-        color = "white", fill = "lightblue", size = 0.2
-      ) +
-      # geom_point() adds points for each hotel subset by country with lead time
-      geom_point_interactive(
-        data = merged_loc,
-        aes(y = Latitude..average.,x = Longitude..average., color = "red",
-            size=lead_time, tooltip=paste("Country: ", Country,
-                                          "<br>Lead Time: ", lead_time,
-                                          " days", sep="")),
-        alpha = .5
-      ) + 
-      # remove the legend
-      theme(legend.position="none")
+p <- ggplot() +
+  
+# geom_map() function takes world coordinates as input to plot world map
+geom_map(
+  data = world_coordinates, map = world_coordinates,
+  aes(long, lat, map_id = region), 
+  color = "white", fill = "lightblue", size = 0.2
+) +
+# geom_point() adds points for each hotel subset by country with lead time
+geom_point_interactive(
+  data = merged_loc,
+  aes(y = Latitude..average.,x = Longitude..average., color = "red",
+      size=lead_time, tooltip=paste("Country: ", Country,
+                                    "<br>Lead Time: ", lead_time,
+                                    " days", sep="")),
+  alpha = .5
+) + 
+# remove the legend
+theme(legend.position="none")
 
 ```
 
 
 Finally, the ggiraph() function is used to create an interactive plot by passing the print() output of the ggplot() object as a code argument.
 ```{r}
-    ggiraph(code = print(p))
+ggiraph(code = print(p))
 
 ```
 
 
-The resulting plot can be used to explore the distribution of hotel bookings and lead times across different countries. The plotted points are color-coded based on the lead time, and hovering over a point displays information about the country and lead time in a tooltip. The interactivity of the plot can enhance the analysis by providing a more intuitive understanding of the data.
-
+The resulting plot can be used to explore the distribution of hotel bookings and lead times across different countries. The plotted points are color-coded based on the lead time, and hovering over a point displays information about the country and lead time in a tooltip.
 ---
 
 ---
@@ -534,15 +544,15 @@ The resulting plot can be used to explore the distribution of hotel bookings and
 
 The code below performs a two-sample t-test to compare the Average Daily Rate (ADR) between City and Resort hotels. The first step in performing a t-test is to create two subsets of the ADR data: one for City hotels and one for Resort hotels. This is achieved using the subset() function in R, which extracts the ADR data for the City and Resort hotels separately using the hotel column.
 ```{r}
-  city_adr <- subset(merged_loc, hotel == "City Hotel")$adr
-    resort_adr <- subset(merged_loc, hotel == "Resort Hotel")$adr
-  
+city_adr <- subset(merged_loc, hotel == "City Hotel")$adr
+resort_adr <- subset(merged_loc, hotel == "Resort Hotel")$adr
+
 ```
     
     
 Next, the t.test() function is used to perform a two-sample t-test, which calculates the difference between the means of the two subsets of data and determines whether this difference is statistically significant. The results of the t-test are stored in the t_test_result variable.
 ```{r}
-    t_test_result <- t.test(city_adr, resort_adr)
+t_test_result <- t.test(city_adr, resort_adr)
 
 ```
 
@@ -550,10 +560,10 @@ Next, the t.test() function is used to perform a two-sample t-test, which calcul
 Finally, the results of the t-test are printed to the console using the variable t_test_result.
 ```{r}
 
-    t_test_result
+t_test_result
 ```
 
-The Welch Two Sample t-test was used to compare the means of two independent groups represented by city_adr and resort_adr variables. The p-value is very small, indicating that the null hypothesis of equal means can be rejected in favor of the alternative hypothesis that the two groups are not the same. The 95% confidence interval suggests that the true difference in means lies between 7.93 and 12.19, and the sample means indicate that the city_adr group has a significantly higher mean value than the resort_adr group. Overall, there is a statistically significant difference in the mean values of the two groups.  
+*The Welch Two Sample t-test was used to compare the means of two independent groups represented by city_adr and resort_adr variables. The p-value is very small, indicating that the null hypothesis of equal means can be rejected in favor of the alternative hypothesis that the two groups are not the same. The 95% confidence interval suggests that the true difference in means lies between 7.93 and 12.19, and the sample means indicate that the city_adr group has a significantly higher mean value than the resort_adr group. Overall, there is a statistically significant difference in the mean values of the two groups.*  
 
 ---
 
@@ -562,32 +572,34 @@ The Welch Two Sample t-test was used to compare the means of two independent gro
 The number of children in a booking could potentially affect the ADR, as families with children may require additional accommodations or services that could drive up the price. To investigate this relationship, we fit a linear regression model between ADR and Children, as well as stays in weeknights, using the merged_loc dataset.
 ```{r}
 
-    #Fit a linear regression model between ADR and Children and stays in weeknights
-    model <- lm(adr ~ children + stays_in_week_nights, data = merged_loc)
+#Fit a linear regression model between ADR and Children and stays in weeknights
+model <- lm(adr ~ children + stays_in_week_nights, data = merged_loc)
 
-    #Print model summary
-    summary(model)
+#Print model summary
+summary(model)
 ```
 
 
-The code "lm(formula = adr ~ children, data = hotel_subset)" runs a linear regression model where adr is the dependent variable and children is the independent variable, using the hotel_subset dataset. The coefficients table shows that both the intercept and slope are significant. The R-squared values indicate that the model explains 11.83% of the variation in adr, and adding the children variable did not improve the fit significantly. The F-statistic shows that the children variable is a significant predictor of adr. The regression model suggests that for each additional child, adr increases by approximately 41.03 units. Therefore, the number of children is a significant predictor of adr.
+The code "lm(formula = adr ~ children, data = hotel_subset)" runs a linear regression model where adr is the dependent variable and children is the independent variable, using the hotel_subset dataset.
+
+*The coefficients table shows that both the intercept and slope are significant. The R-squared values indicate that the model explains 11.83% of the variation in adr, and adding the children variable did not improve the fit significantly. The F-statistic shows that the children variable is a significant predictor of adr. The regression model suggests that for each additional child, adr increases by approximately 41.03 units. Therefore, the number of children is a significant predictor of adr.*
 
 Next, we focus on the relationship between ADR and Children in the hotel_subset dataset using a scatter plot and linear regression model. To achieve this, we use the ggplot2 and ggpubr libraries to plot a scatter plot and overlay a linear regression line.
 ```{r}
 
-    #Load required libraries
-    library(ggplot2)
-    library(ggpubr)
-    
-    #Fit linear regression model
-    lm_model <- lm(adr ~ children, data = hotel_subset)
-    
-    #Plot linear regression model
-    ggscatter(hotel_subset, x = "children", y = "adr",
-    add = "reg.line", conf.int = TRUE,
-    cor.coef = TRUE, cor.method = "pearson",
-    xlab = "Children", ylab = "ADR",
-    title = "Linear Regression Model: ADR vs. Children")
+#Load required libraries
+library(ggplot2)
+library(ggpubr)
+
+#Fit linear regression model
+lm_model <- lm(adr ~ children, data = hotel_subset)
+
+#Plot linear regression model
+ggscatter(hotel_subset, x = "children", y = "adr",
+add = "reg.line", conf.int = TRUE,
+cor.coef = TRUE, cor.method = "pearson",
+xlab = "Children", ylab = "ADR",
+title = "Linear Regression Model: ADR vs. Children")
 ```
 
 
@@ -615,23 +627,23 @@ library(gganimate)
 
 ```{r}
 
-    
-    # Aggregate data by year and month
-    hotel_data_agg <- hotel_subset %>% 
-      group_by(year = year(arrival_date), month = month(arrival_date)) %>% 
-      summarize(bookings = n())
-    
-    
-    # Plot the line graph and create animation frames
-    p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
-      geom_line() +
-      geom_point(color = "red", size = 5) +
-      xlab("Months \nYear- 2015 to 2016") +
-      ylab("Number of Bookings") +
-      ggtitle("Number of Bookings over Time") +
-      transition_reveal(month) +
-      theme_economist() 
-  
+
+# Aggregate data by year and month
+hotel_data_agg <- hotel_subset %>% 
+  group_by(year = year(arrival_date), month = month(arrival_date)) %>% 
+  summarize(bookings = n())
+
+
+# Plot the line graph and create animation frames
+p <- ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
+  geom_line() +
+  geom_point(color = "red", size = 5) +
+  xlab("Months \nYear- 2015 to 2016") +
+  ylab("Number of Bookings") +
+  ggtitle("Number of Bookings over Time") +
+  transition_reveal(month) +
+  theme_economist() 
+
 ```
 
   
