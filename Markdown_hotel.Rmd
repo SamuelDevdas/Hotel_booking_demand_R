@@ -201,13 +201,13 @@ summary(data_hotel)
 
 ---
 
-We can also check for missing values in the dataset. If the missing values are few and negligible, we can safely ignore them.
+We can also check for missing values in the dataset. If the missing values are few and negligible, we can ignore them.
 
 ```{r}
 sum(is.na(data_hotel))
 ```
 
-In our case, we have only 4 missing values, which we can safely ignore as insignificant.
+In our case, we have only 4 missing values, which we can ignore as insignificant.
 
 ---
 
@@ -294,7 +294,6 @@ After removing the leading spaces, we checked if the values in the two columns i
    
 Finally, we verified that the resulting dataset, merged_loc, has geolocation per country without any extra missing values generated.
 ```{r}
-table(is.na(merged_loc$Country))
 sum(is.na(merged_loc))
 
 ```
@@ -377,6 +376,9 @@ ggplot(data = corr_melted, aes(x = Var1, y = Var2, fill = Corr)) +
 
 The resulting heatmap provides insights into the relationship between different variables in the dataset. The color gradient helps visualize the strength and direction of the correlation, with red indicating a positive correlation and blue indicating a negative correlation. The diagonal line shows the correlation of each variable with itself, which is always 1.
 
+*There appears to be significant positive correlation between adr and children variables. Previous_bookings_not_cancelled and is_repeat_guest also have positive correlation.*
+*Total_of_special_guests and is_cancelled are negatively correlated.*
+
 ---
 
 ### Seasonality of hotel bookings
@@ -408,7 +410,7 @@ ggplot(hotel_data_agg, aes(x = month, y = bookings)) +
       ylab("Number of Bookings") +
       ggtitle("Number of Bookings over Time")
 ```
-
+*The line chart shows that there is a gradual increase in the number of bookings from January to July, with a steep drop in August. After that, the number of bookings gradually increases again until it reaches its peak in October, followed by a decline in December.*
 ---
 
 ### Histogram - Frequency distribution of lead time data
@@ -446,7 +448,7 @@ merged_loc$cancelled <- ifelse(merged_loc$is_canceled == 1, "cancelled", "not ca
 ggplot(merged_loc, aes(x = cancelled, fill = cancelled)) +
   geom_bar() +
   scale_fill_manual(values = c("lightblue", "darkblue"), 
-                    labels = c("Not Cancelled", "Cancelled")) +
+                    labels = c("Cancelled", "Not Cancelled")) +
   labs(title = "Count of Cancelled and Not-cancelled Bookings",
        x = "Cancellation Status",
        y = "Count")
@@ -477,7 +479,7 @@ ggplot(mean_adr_by_hotel_type, aes(x = hotel, y = adr, fill = hotel)) +
        x = "Hotel Type", y = "Average Daily Rate (ADR)")
 
 ```
-*The bar plot conclusively shows that the average daily rate of the city hotels is higher than that of the resort hotels.*    
+*The bar plot conclusively shows that the average daily rate of the city hotels is higher than that of the resort hotels.*   
 
 ---
 
@@ -532,8 +534,8 @@ ggiraph(code = print(p))
 
 ```
 
+The resulting plot can be used to explore the distribution of hotel bookings and lead times across different countries. The size of the circles represents the lead time, and hovering over a circle displays information about the country and lead time in a tooltip.
 
-The resulting plot can be used to explore the distribution of hotel bookings and lead times across different countries. The plotted points are color-coded based on the lead time, and hovering over a point displays information about the country and lead time in a tooltip.
 ---
 
 ---
@@ -542,7 +544,7 @@ The resulting plot can be used to explore the distribution of hotel bookings and
 
 ### Two-sample t-test 
 
-The code below performs a two-sample t-test to compare the Average Daily Rate (ADR) between City and Resort hotels. The first step in performing a t-test is to create two subsets of the ADR data: one for City hotels and one for Resort hotels. This is achieved using the subset() function in R, which extracts the ADR data for the City and Resort hotels separately using the hotel column.
+The code below performs a two-sample t-test to compare the Average Daily Rate (ADR) between City and Resort hotel. The first step in performing a t-test is to create two subsets of the ADR data: one for the City hotel and one for the Resort hotel. This is achieved using the subset() function in R, which extracts the ADR data for the City and Resort hotels separately using the hotel column.
 ```{r}
 city_adr <- subset(merged_loc, hotel == "City Hotel")$adr
 resort_adr <- subset(merged_loc, hotel == "Resort Hotel")$adr
@@ -603,7 +605,7 @@ title = "Linear Regression Model: ADR vs. Children")
 ```
 
 
-The scatter plot with the linear regression line confirms the output of the model summary.
+*The scatter plot with the linear regression line confirms the output of the model summary.*
 
 ---
 
@@ -660,10 +662,7 @@ animate(p, nframes = 50, fps = 10, renderer = gifski_renderer())
 
     
 
-The animated graph shows the increase in booking demand from January 2015 to August 2016. The number of bookings peaked in July 2016 with over 3000 bookings.
-
-Overall, the visualization provides an informative and engaging way to analyze the booking demand of hotels over time.
-
+*The animated graph aggregate moving trend in booking demand from January 2015 to August 2016. The number of bookings peaked in May and then again around September.*
 
 ### Improvement of Visual Appeal of the Report
 
